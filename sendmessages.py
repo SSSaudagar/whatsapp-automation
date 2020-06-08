@@ -6,20 +6,9 @@ from selenium.webdriver.common.by import By
 import time
 import csv
 
-# contacts = [
-#     [
-#         '1234567890', 'Srushti'
-#     ],
-#     [
-#         '1234567891', 'Shashank' 
-#     ],
-#     [
-#         '1234567892', 'Prasad'
-#     ],
-#     [
-#         '1234567893', 'Sudhir'
-#     ]
-# ]
+with open('contacts.csv') as f:
+    reader = csv.reader(f)
+    contacts = list(reader)
 
 invalid = []
 string = "This is a python generated message. this is test message. @name@ your number is @num@."
