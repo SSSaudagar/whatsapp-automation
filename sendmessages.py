@@ -5,25 +5,28 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 import time
 import csv
+import urllib.parse
 
 with open('contacts.csv') as f:
     reader = csv.reader(f)
     contacts = list(reader)
 
 invalid = []
-string = "This is a python generated message. this is test message. @name@ your number is @num@."
+string = "Dear @fname@ @lname@,\nDreams have no limits!\nDon\'t limit your child\'s ambitions to medicine or engineering. Help them discover their true passion!\nPlan your child\'s successful career with us.\nVisit us on https://www.mysmartmove.in?campaign=whatsapp-1&phone=@num@ or reach us on Whatsapp."
 driver = webdriver.Chrome('./chromedriver')
 driver.get("https://web.whatsapp.com/")
 input('Enter anything after scanning QR code')
 
 wait = WebDriverWait(driver, 10)
 inp_xpath = "//*[@id=\"main\"]/footer/div[1]/div[2]/div/div[2]"
-
+i=1
 for contact in contacts:
-    driver.get("https://web.whatsapp.com/send?phone=91"+contact[0])
+    print('sending '+str(i)+' of '+str(len(contacts)))
+    i+=1
+    driver.get("https://web.whatsapp.com/send?phone=91"+contact[3]+"&text="+urllib.parse.quote(string.replace("@fname@",contact[2]).replace("@lname@",contact[0]).replace("@num@",contact[3])))
     try:
         input_box = wait.until(EC.presence_of_element_located((By.XPATH, inp_xpath)))
-        input_box.send_keys(string.replace("@name@",contact[1]).replace("@num@",contact[0])+Keys.ENTER)
+        input_box.send_keys(Keys.ENTER)
         time.sleep(3)
         continue
     except:
@@ -36,6 +39,7 @@ for contact in contacts:
             continue
         except:
             print("Something went wrong")
+            invalid.append(contact)
 
 print("invalid contacts")
 print(invalid)
