@@ -1,3 +1,6 @@
 wenv*
 chrome*
 contacts.csv
+.vscode
+User_Data
+invalid.csv

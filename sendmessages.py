@@ -3,46 +3,99 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.options import Options
 import time
 import csv
+import datetime
+import os
 import urllib.parse
 
-with open('contacts.csv') as f:
-    reader = csv.reader(f)
-    contacts = list(reader)
+message = "Dear @fname@ @lname@,\nDreams have no limits!\nDon\'t limit your child\'s ambitions to medicine or engineering. Help them discover their true passion!\nPlan your child\'s successful career with us.\nVisit us on https://www.mysmartmove.in?campaign=whatsapp-1&phone=@num@ or reach us on Whatsapp."
+attachment = False
+driver = None
+variables = {
+    'lname'     : 0,
+    'name'      : 1,
+    'fname'     : 2,
+    'num'       : 3,
+    'dist'      : 4
+}
 
-invalid = []
-string = "Dear @fname@ @lname@,\nDreams have no limits!\nDon\'t limit your child\'s ambitions to medicine or engineering. Help them discover their true passion!\nPlan your child\'s successful career with us.\nVisit us on https://www.mysmartmove.in?campaign=whatsapp-1&phone=@num@ or reach us on Whatsapp."
-driver = webdriver.Chrome('./chromedriver')
-driver.get("https://web.whatsapp.com/")
-input('Enter anything after scanning QR code')
 
-wait = WebDriverWait(driver, 10)
-inp_xpath = "//*[@id=\"main\"]/footer/div[1]/div[2]/div/div[2]"
-i=1
-for contact in contacts:
-    print('sending '+str(i)+' of '+str(len(contacts)))
-    i+=1
-    driver.get("https://web.whatsapp.com/send?phone=91"+contact[3]+"&text="+urllib.parse.quote(string.replace("@fname@",contact[2]).replace("@lname@",contact[0]).replace("@num@",contact[3])))
+def getContactsList():
+    with open('contacts.csv') as f:
+        reader = csv.reader(f)
+        contacts = list(reader)
+    print(str(len(contacts))+" have been imported")
+    print(contacts[:5])
+    input("Please press enter key to continue")
+    return contacts
+
+def whatsappLogin():
+    global driver, wait
+    chrome_options = Options()
+    chrome_options.add_argument('--user-data-dir=./User_Data')
+    driver = webdriver.Chrome(executable_path='./chromedriver', options=chrome_options)
+    driver.get("https://web.whatsapp.com/")
+    input('Enter anything after scanning QR code')
+
+def sendMessaage(contact):
+    global driver,message,variables
+    driver.get("https://web.whatsapp.com/send?phone=91{}&text&source&data&app_absent".format(contact['num']))
+    inp_xpath = "//*[@id=\"main\"]/footer/div[1]/div[2]/div/div[2]"
+    msg = message
+    for key in variables:
+        msg = msg.replace("@"+key+"@", contact[key])
     try:
-        input_box = wait.until(EC.presence_of_element_located((By.XPATH, inp_xpath)))
+        input_box = WebDriverWait(driver, 7).until(EC.presence_of_element_located((By.XPATH, inp_xpath)))
+        for ch in msg:
+            if ch == "\n":
+                ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.BACKSPACE).perform()
+            else:
+                input_box.send_keys(ch)
         input_box.send_keys(Keys.ENTER)
         time.sleep(3)
-        continue
+        return True
     except:
         try:
-            wait1 = WebDriverWait(driver, 10)
             inp_xpath1 = "//*[@id=\"app\"]/div/span[2]/div/span/div/div/div/div/div/div[2]/div"
-            wait.until(EC.presence_of_element_located((By.XPATH, inp_xpath1)))
-            print(contact[1]+" Not available on whatsapp")
-            invalid.append(contact)
-            continue
+            popup = driver.find_element_by_xpath(inp_xpath1)
+            contact['failed'] = "Contact not on WhatsApp"
         except:
-            print("Something went wrong")
-            invalid.append(contact)
+            contact['failed'] = "Unknown error. Please try sending again"
+        time.sleep(3)
+        return False
+    
 
-print("invalid contacts")
-print(invalid)
+def sender(contacts):
+    global variables
+    with open('invalid.csv','w+') as invalid:
+        invWriter = csv.writer(invalid)
+        valid = []
+        for i in range(len(contacts)):
+            print('Processing {} of {} contacts'.format(i+1,len(contacts)))
+            contact = {}
+            for key in variables:
+                contact[key] = contacts[i][variables[key]]
+            if contact['num'] in valid:
+                contact['failed']= 'Messaage already sent in this campaign'
+                invWriter.writerow(contact.values())
+                continue
+            if not sendMessaage(contact):
+                invWriter.writerow(contact.values())
+            else:
+                valid.append(contact['num'])
+        
+
+
+
+
+
+contacts = getContactsList()
+whatsappLogin()
+sender(contacts)
 driver.quit()
 
 
