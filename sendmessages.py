@@ -11,6 +11,10 @@ import csv
 import datetime
 import os
 import urllib.parse
+try:
+    import autoit
+except ModuleNotFoundError:
+    pass
 
 message = "Dear @fname@ @lname@,\nDreams have no limits!\nDon\'t limit your child\'s ambitions to medicine or engineering. Help them discover their true passion!\nPlan your child\'s successful career with us.\nVisit us on https://www.mysmartmove.in?campaign=whatsapp-1&phone=@num@ or reach us on Whatsapp."
 attachment = False
@@ -108,6 +112,20 @@ def sendContact(contact):
     time.sleep(1)
     sendButton2 = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div/div')
     sendButton2.click()
+
+def sendMedia(filename): #onlyForWindows
+    clipButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/div/span')
+    clipButton.click()
+    time.sleep(1)
+    mediaButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/span/div/div/ul/li[1]/button')
+    mediaButton.click()
+    image_path = os.getcwd() + "\\Media\\" + filename
+    autoit.control_focus("Open", "Edit1")
+    autoit.control_set_text("Open", "Edit1", image_path)
+    autoit.control_click("Open", "Button1")
+    time.sleep(3)
+    sendButton = driver.find_element_by_xpath('//*[@id="app"]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span[2]/div/div/span')
+    sendButton.click()
     
 
 contacts = getContactsList()
