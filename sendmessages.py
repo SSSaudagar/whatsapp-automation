@@ -89,9 +89,26 @@ def sender(contacts):
                 valid.append(contact['num'])
         
 
-
-
-
+def sendContact(contact):
+    clipButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/div/span')
+    clipButton.click()
+    time.sleep(1)
+    contactButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/span/div/div/ul/li[4]/button')
+    contactButton.click()
+    searchInput = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[1]/div/label/div/div[2]')
+    searchInput.click()
+    searchInput.send_keys(contact)
+    time.sleep(1)
+    x_arg = '//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div[1]/div/div/div[2]'
+    contactTitle = driver.find_element_by_xpath(x_arg)
+    contactTitle.click()
+    time.sleep(1)
+    sendButton = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/span/div/div/div')
+    sendButton.click()
+    time.sleep(1)
+    sendButton2 = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div/div')
+    sendButton2.click()
+    
 
 contacts = getContactsList()
 whatsappLogin()
