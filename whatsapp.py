@@ -12,109 +12,129 @@ import datetime
 import os
 import urllib.parse
 import pyperclip
+import argparse
 try:
     import autoit
 except ModuleNotFoundError:
     pass
 
-message = "Dear @fname@ @lname@,\n\nTransform passion into a profession.👨🎓\n\nHelp your child make the right career choice by discovering their true talents and strengths. 💪💯\n\nOur AI-based career guidance test helps determine your career path based on your personality and aptitude. 📝😎\n\nTake our FREE career test today on - \n\n\n\nOr reach out to us on - "
-media = False
-attachment = False
-contactCard = False
+parser = argparse.ArgumentParser(description='Cybertrom WhatsApp Automation Guide')
+parser.add_argument('--chrome_driver_path', action='store', type=str, default='./chromedriver', help='chromedriver executable path (MAC and Windows path would be different)')
+parser.add_argument('--remove_cache', action='store_true', help='Remove Cache | Scan QR again or Not')
+parser.add_argument('--test', action='store_true', help='Send message to test contacts')
+parser.add_argument('--login',action='store_true', help='Log in to whatsapp')
+args = parser.parse_args()
+
+if args.remove_cache:
+    os.system('rm -rf User_Data/*')
+
 driver = None
-variables = {
-    'lname'     : 0,
-    'name'      : 1,
-    'fname'     : 2,
-    'num'       : 3,
-    'dist'      : 4
-}
+_user_data = './User_Data'
+valid = []
 
-
-def getContactsList():
-    with open('contacts.csv') as f:
+def getContactsList(filename):
+    with open(filename) as f:
         reader = csv.reader(f)
         contacts = list(reader)
-    print(str(len(contacts))+" have been imported")
-    print(contacts[:5])
-    input("Please press enter key to continue")
     return contacts
 
-def whatsappLogin():
-    global driver, wait
+def startBrowser(headless = True):
+    global driver,args
     chrome_options = Options()
-    chrome_options.add_argument('--user-data-dir=./User_Data')
-    driver = webdriver.Chrome(executable_path='./chromedriver', options=chrome_options)
-    driver.get("https://web.whatsapp.com/")
-    input('Enter anything after scanning QR code')
+    chrome_options.add_argument('--user-data-dir='+_user_data)
+    if headless: chrome_options.add_argument("--headless") 
+    chrome_options.add_argument("--window-size=1920x1080")
+    driver = webdriver.Chrome(executable_path=args.chrome_driver_path, options=chrome_options)
+    return
 
-def sendMessaage(contact):
-    global driver,message,variables
-    driver.get("https://web.whatsapp.com/send?phone=91{}&text&source&data&app_absent".format(contact['num']))
+def stopBrowser():
+    global driver
+    driver.quit()
+    return
+
+def whatsappLogin():
+    startBrowser(False)
+    driver.get("https://web.whatsapp.com/")
+    return
+
+def sendContact(contact):
+    global driver
+    clip_button = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/div/span')
+    clip_button.click()
+    time.sleep(1)
+    contact_button = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/span/div/div/ul/li[4]/button')
+    contact_button.click()
+    search_input = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[1]/div/label/div/div[2]')
+    search_input.click()
+    search_input.send_keys(contact)
+    time.sleep(1)
+    x_arg = '//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div[1]/div/div/div[2]'
+    contact_title = driver.find_element_by_xpath(x_arg)
+    contact_title.click()
+    time.sleep(1)
+    send_button = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/span/div/div/div')
+    send_button.click()
+    time.sleep(1)
+    send_button2 = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div/div')
+    send_button2.click()
+    time.sleep(1)
+
+def sendMessage(recipient,message,contact):
+    global driver
+    driver.get("https://web.whatsapp.com/send?phone=91{}&text&source&data&app_absent".format(recipient['num']))
     inp_xpath = "//*[@id=\"main\"]/footer/div[1]/div[2]/div/div[2]"
     msg = message
-    for key in variables:
-        msg = msg.replace("@"+key+"@", contact[key])
+    for key in recipient:
+        msg = msg.replace("@"+key+"@", recipient[key])
     pyperclip.copy(msg)
     try:
-        input_box = WebDriverWait(driver, 12).until(EC.element_to_be_clickable((By.XPATH, inp_xpath)))
+        input_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, inp_xpath)))
         time.sleep(1)
         input_box.click()
         ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.INSERT).key_up(Keys.INSERT).key_up(Keys.SHIFT).key_up(Keys.BACKSPACE).perform()
         input_box.send_keys(Keys.ENTER)
-        time.sleep(3)
+        time.sleep(1)
+        if contact: sendContact(contact)
         return True
     except:
         try:
             inp_xpath1 = "//*[@id=\"app\"]/div/span[2]/div/span/div/div/div/div/div/div[2]/div"
             popup = driver.find_element_by_xpath(inp_xpath1)
-            contact['failed'] = "Contact not on WhatsApp"
+            recipient['failed'] = "Contact not on WhatsApp"
         except:
-            contact['failed'] = "Unknown error. Please try sending again"
+            recipient['failed'] = "Unknown error. Please try sending again"
         time.sleep(3)
         return False
-    
+    return
 
-def sender(contacts):
-    global variables
-    with open('invalid.csv','w+') as invalid:
+def sender(filename,variables,message):
+    global valid,args
+    if isinstance(message,str):
+        text = message
+        contact = None
+    else:
+        text = message['text']
+        contact = message['contact']
+    recipients = getContactsList(filename)
+    startBrowser()
+    with open('Invalid/'+filename.replace('.csv','.invalid.csv'),'w+') as invalid:
         invWriter = csv.writer(invalid)
-        valid = []
-        for i in range(len(contacts)):
-            print('Processing {} of {} contacts'.format(i+1,len(contacts)))
-            contact = {}
+        for i in range(len(recipients)):
+            print('Processing {} of {} contacts'.format(i+1,len(recipients)))
+            recipient = {}
             for key in variables:
-                contact[key] = contacts[i][variables[key]]
-            if contact['num'] in valid:
-                contact['failed']= 'Messaage already sent in this campaign'
-                invWriter.writerow(contact.values())
+                recipient[key] = recipients[i][variables[key]]
+            if recipient['num'] in valid:
+                recipient['failed']= 'Messaage already sent in this campaign'
+                invWriter.writerow(recipient.values())
                 continue
-            if not sendMessaage(contact):
-                invWriter.writerow(contact.values())
+            if not sendMessage(recipient,text,contact):
+                invWriter.writerow(recipient.values())
             else:
-                valid.append(contact['num'])
-        
-
-def sendContact(contact):
-    clipButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/div/span')
-    clipButton.click()
-    time.sleep(1)
-    contactButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/span/div/div/ul/li[4]/button')
-    contactButton.click()
-    searchInput = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[1]/div/label/div/div[2]')
-    searchInput.click()
-    searchInput.send_keys(contact)
-    time.sleep(1)
-    x_arg = '//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div[1]/div/div/div[2]'
-    contactTitle = driver.find_element_by_xpath(x_arg)
-    contactTitle.click()
-    time.sleep(1)
-    sendButton = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/span/div/div/div')
-    sendButton.click()
-    time.sleep(1)
-    sendButton2 = driver.find_element_by_xpath('//*[@id="app"]/div/span[2]/div/span/div/div/div/div/div/div/div[2]/div/div')
-    sendButton2.click()
-
+                if not args.test: valid.append(recipient['num'])
+    stopBrowser()
+    return
+    
 def sendMedia(filename): #onlyForWindows
     clipButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/div/span')
     clipButton.click()
@@ -129,12 +149,11 @@ def sendMedia(filename): #onlyForWindows
     sendButton = driver.find_element_by_xpath('//*[@id="app"]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span[2]/div/div/span')
     sendButton.click()
     
-
-contacts = getContactsList()
-whatsappLogin()
-sender(contacts)
-driver.quit()
-
+if __name__ == "__main__":
+    if args.login:
+        whatsappLogin()
+        input("Press Enter to exit")
+        stopBrowser()
 
 
 
