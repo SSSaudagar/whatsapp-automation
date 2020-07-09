@@ -4,3 +4,5 @@ contacts.csv
 .vscode
 User_Data
 invalid.csv
+.DS_Store
+__pycache__
