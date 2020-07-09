@@ -11,13 +11,16 @@ import csv
 import datetime
 import os
 import urllib.parse
+import pyperclip
 try:
     import autoit
 except ModuleNotFoundError:
     pass
 
-message = "Dear @fname@ @lname@,\nDreams have no limits!\nDon\'t limit your child\'s ambitions to medicine or engineering. Help them discover their true passion!\nPlan your child\'s successful career with us.\nVisit us on https://www.mysmartmove.in?campaign=whatsapp-1&phone=@num@ or reach us on Whatsapp."
+message = "Dear @fname@ @lname@,\n\nTransform passion into a profession.👨🎓\n\nHelp your child make the right career choice by discovering their true talents and strengths. 💪💯\n\nOur AI-based career guidance test helps determine your career path based on your personality and aptitude. 📝😎\n\nTake our FREE career test today on - \n\n\n\nOr reach out to us on - "
+media = False
 attachment = False
+contactCard = False
 driver = None
 variables = {
     'lname'     : 0,
@@ -52,13 +55,12 @@ def sendMessaage(contact):
     msg = message
     for key in variables:
         msg = msg.replace("@"+key+"@", contact[key])
+    pyperclip.copy(msg)
     try:
-        input_box = WebDriverWait(driver, 7).until(EC.presence_of_element_located((By.XPATH, inp_xpath)))
-        for ch in msg:
-            if ch == "\n":
-                ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.BACKSPACE).perform()
-            else:
-                input_box.send_keys(ch)
+        input_box = WebDriverWait(driver, 12).until(EC.element_to_be_clickable((By.XPATH, inp_xpath)))
+        time.sleep(1)
+        input_box.click()
+        ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.INSERT).key_up(Keys.INSERT).key_up(Keys.SHIFT).key_up(Keys.BACKSPACE).perform()
         input_box.send_keys(Keys.ENTER)
         time.sleep(3)
         return True
@@ -119,9 +121,9 @@ def sendMedia(filename): #onlyForWindows
     time.sleep(1)
     mediaButton = driver.find_element_by_xpath('//*[@id="main"]/header/div[3]/div/div[2]/span/div/div/ul/li[1]/button')
     mediaButton.click()
-    image_path = os.getcwd() + "\\Media\\" + filename
+    image = os.getcwd() + "\\Media\\" + filename
     autoit.control_focus("Open", "Edit1")
-    autoit.control_set_text("Open", "Edit1", image_path)
+    autoit.control_set_text("Open", "Edit1", image)
     autoit.control_click("Open", "Button1")
     time.sleep(3)
     sendButton = driver.find_element_by_xpath('//*[@id="app"]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span[2]/div/div/span')

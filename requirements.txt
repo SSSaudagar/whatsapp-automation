@@ -1,3 +1,4 @@
 urllib
 selenium
 PyAutoIt
+pyperclip
