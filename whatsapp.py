@@ -42,7 +42,7 @@ def startBrowser(headless = True):
     global driver,args
     chrome_options = Options()
     chrome_options.add_argument('--user-data-dir='+_user_data)
-    if headless: chrome_options.add_argument("--headless") 
+    # if headless: chrome_options.add_argument("--headless") 
     chrome_options.add_argument("--window-size=1920x1080")
     driver = webdriver.Chrome(executable_path=args.chrome_driver_path, options=chrome_options)
     return
