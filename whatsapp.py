@@ -5,7 +5,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options
+# from pyvirtualdisplay import Display
 import time
 import csv
 import datetime
@@ -20,6 +22,7 @@ except ModuleNotFoundError:
 
 parser = argparse.ArgumentParser(description='Cybertrom WhatsApp Automation Guide')
 parser.add_argument('--chrome_driver_path', action='store', type=str, default='./chromedriver', help='chromedriver executable path (MAC and Windows path would be different)')
+parser.add_argument('--firefox_driver_path', action='store', type=str, default='./geckodriver', help='geckodriver executable path (MAC and Windows path would be different)')
 parser.add_argument('--remove_cache', action='store_true', help='Remove Cache | Scan QR again or Not')
 parser.add_argument('--test', action='store_true', help='Send message to test contacts')
 parser.add_argument('--login',action='store_true', help='Log in to whatsapp')
@@ -40,11 +43,12 @@ def getContactsList(filename):
 
 def startBrowser(headless = True):
     global driver,args
-    chrome_options = Options()
-    chrome_options.add_argument('--user-data-dir='+_user_data)
-    # if headless: chrome_options.add_argument("--headless") 
-    chrome_options.add_argument("--window-size=1920x1080")
-    driver = webdriver.Chrome(executable_path=args.chrome_driver_path, options=chrome_options)
+    browser_options = Options()
+    # browser_options.add_argument('--user-data-dir='+_user_data)
+    browser_options.headless = False#headless
+    browser_options.add_argument('--start-debugger-server ws:1234')
+    profile = webdriver.FirefoxProfile('/Users/shashank/Library/Application Support/Firefox/Profiles/1rl2yche.selenium')
+    driver = webdriver.Firefox(profile,executable_path=args.firefox_driver_path, options=browser_options)
     return
 
 def stopBrowser():
@@ -91,7 +95,7 @@ def sendMessage(recipient,message,contact):
         input_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, inp_xpath)))
         time.sleep(1)
         input_box.click()
-        ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.INSERT).key_up(Keys.INSERT).key_up(Keys.SHIFT).key_up(Keys.BACKSPACE).perform()
+        ActionChains(driver).key_down(Keys.COMMAND).key_down('v').key_up('v').key_up(Keys.COMMAND).perform()
         input_box.send_keys(Keys.ENTER)
         time.sleep(1)
         if contact: sendContact(contact)
