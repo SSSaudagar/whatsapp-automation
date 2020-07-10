@@ -5,8 +5,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
-# from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 # from pyvirtualdisplay import Display
 import time
 import csv
@@ -23,6 +23,7 @@ except ModuleNotFoundError:
 parser = argparse.ArgumentParser(description='Cybertrom WhatsApp Automation Guide')
 parser.add_argument('--chrome_driver_path', action='store', type=str, default='./chromedriver', help='chromedriver executable path (MAC and Windows path would be different)')
 parser.add_argument('--firefox_driver_path', action='store', type=str, default='./geckodriver', help='geckodriver executable path (MAC and Windows path would be different)')
+parser.add_argument('--browser',action='store', type=str, default='chrome', help="Choose browser [firefox|chrome]")
 parser.add_argument('--remove_cache', action='store_true', help='Remove Cache | Scan QR again or Not')
 parser.add_argument('--test', action='store_true', help='Send message to test contacts')
 parser.add_argument('--login',action='store_true', help='Log in to whatsapp')
@@ -30,9 +31,14 @@ args = parser.parse_args()
 
 if args.remove_cache:
     os.system('rm -rf User_Data/*')
+if args.browser == 'chrome':
+    _paste_keys = [Keys.SHIFT, Keys.INSERT]
+elif args.browser == 'firefox':
+    _paste_keys = [Keys.COMMAND, 'v']
 
 driver = None
 _user_data = './User_Data'
+
 valid = []
 
 def getContactsList(filename):
@@ -43,12 +49,20 @@ def getContactsList(filename):
 
 def startBrowser(headless = True):
     global driver,args
-    browser_options = Options()
-    # browser_options.add_argument('--user-data-dir='+_user_data)
-    browser_options.headless = False#headless
-    browser_options.add_argument('--start-debugger-server ws:1234')
-    profile = webdriver.FirefoxProfile('/Users/shashank/Library/Application Support/Firefox/Profiles/1rl2yche.selenium')
-    driver = webdriver.Firefox(profile,executable_path=args.firefox_driver_path, options=browser_options)
+    if args.browser == 'chrome':
+        chrome_options = ChromeOptions()
+        chrome_options.add_argument('--user-data-dir='+_user_data)
+        # if headless: chrome_options.add_argument("--headless") 
+        # chrome_options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36')
+        # if args.debug: chrome_options.add_argument("--remote-debugging-port=9222")
+        chrome_options.add_argument("--window-size=1920x1080")
+        driver = webdriver.Chrome(executable_path=args.chrome_driver_path, options=chrome_options)
+    else:
+        browser_options = FirefoxOptions()
+        browser_options.headless = False#headless
+        # if args.debug: browser_options.add_argument('--start-debugger-server')
+        profile = webdriver.FirefoxProfile('/Users/shashank/Library/Application Support/Firefox/Profiles/1rl2yche.selenium')
+        driver = webdriver.Firefox(profile,executable_path=args.firefox_driver_path, options=browser_options)
     return
 
 def stopBrowser():
@@ -84,7 +98,7 @@ def sendContact(contact):
     time.sleep(1)
 
 def sendMessage(recipient,message,contact):
-    global driver
+    global driver,_paste_keys
     driver.get("https://web.whatsapp.com/send?phone=91{}&text&source&data&app_absent".format(recipient['num']))
     inp_xpath = "//*[@id=\"main\"]/footer/div[1]/div[2]/div/div[2]"
     msg = message
@@ -95,7 +109,7 @@ def sendMessage(recipient,message,contact):
         input_box = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, inp_xpath)))
         time.sleep(1)
         input_box.click()
-        ActionChains(driver).key_down(Keys.COMMAND).key_down('v').key_up('v').key_up(Keys.COMMAND).perform()
+        ActionChains(driver).key_down(_paste_keys[0]).key_down(_paste_keys[1]).key_up(_paste_keys[1]).key_up(_paste_keys[0]).perform()
         input_box.send_keys(Keys.ENTER)
         time.sleep(1)
         if contact: sendContact(contact)
